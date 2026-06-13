@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>GraphCalc Pro - Calculatrice Scientifique & Graphique</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #1C1B1F;
+            color: #E6E1E5;
+            margin: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+        }
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Tap feedback design */
+        .btn-active:active {
+            transform: scale(0.95);
+            filter: brightness(0.9);
+            transition: transform 0.05s ease;
+        }
+        /* Custom scrollbar for history and info */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1C1B1F;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #49454F;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between">
+
+    <!-- Custom Header of the Scientific Applet -->
+    <header class="flex items-center justify-between px-5 py-3 border-b border-[#49454F]/20 bg-[#1C1B1F]/90 backdrop-blur z-30">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#D0BCFF] text-2xl font-bold">functions</span>
+            <div>
+                <h1 class="text-lg font-semibold tracking-tight">GraphCalc Pro</h1>
+                <p class="text-[10px] text-[#CAC4D0] leading-none opacity-80">Moteur RK4 & Traceur Vectoriel</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="showInfoModal()" class="w-9 h-9 flex items-center justify-center rounded-full bg-[#332D41] text-[#D0BCFF] active:bg-[#49454F] transition-colors btn-active cursor-pointer">
+                <span class="material-symbols-outlined text-lg">info</span>
+            </button>
+            <button onclick="shareApp()" class="w-9 h-9 flex items-center justify-center rounded-full bg-[#332D41] text-[#D0BCFF] active:bg-[#49454F] transition-colors btn-active cursor-pointer">
+                <span class="material-symbols-outlined text-lg">share</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Screens Container with Tabs -->
+    <main class="flex-1 overflow-hidden relative w-full max-w-lg mx-auto flex flex-col px-4 pt-3">
+        
+        <!-- ================= CALCULATOR SCREEN ================= -->
+        <section id="tab-calculator" class="flex-1 flex flex-col gap-3 h-full overflow-hidden transition-all duration-300">
+            <!-- Display Container -->
+            <div class="bg-[#2B2930] rounded-[28px] p-5 flex flex-col justify-between shadow-2xl relative border border-[#49454F]/10 min-h-[140px] max-h-[180px]">
+                <div class="flex justify-between items-center pb-2 border-b border-[#49454F]/15">
+                    <span class="text-[10px] text-[#CAC4D0] uppercase tracking-wider font-semibold">Saisie Mathématique</span>
+                    <span id="calc-indicator-type" class="text-[9px] text-[#D0BCFF] uppercase bg-[#332D41] px-2 py-0.5 rounded-full mono-font">Standard</span>
+                </div>
+                
+                <!-- Live expression scrolling screen -->
+                <div class="text-right overflow-x-auto whitespace-nowrap py-1">
+                    <span id="calc-input" class="text-2xl font-light tracking-wide text-[#E6E1E5] mono-font select-all">0</span>
+                </div>
+                
+                <!-- Computed outputs layout -->
+                <div class="text-right">
+                    <span id="calc-result" class="text-3xl font-medium text-[#D0BCFF] tracking-tight mono-font">= 0</span>
+                    <div id="calc-error" class="hidden text-xs text-[#EFB8C8] italic mono-font">Erreur de syntaxe</div>
+                </div>
+            </div>
+
+            <!-- Mathematical custom keypad -->
+            <div class="flex-1 flex flex-col justify-end gap-1.5 pb-2">
+                <!-- Row 1: Scientific Basics -->
+                <div class="grid grid-cols-5 gap-1.5 h-10">
+                    <button onclick="appendToken('sin(')" class="btn-active rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-semibold uppercase cursor-pointer">sin</button>
+                    <button onclick="appendToken('cos(')" class="btn-active rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-semibold uppercase cursor-pointer">cos</button>
+                    <button onclick="appendToken('tan(')" class="btn-active rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-semibold uppercase cursor-pointer">tan</button>
+                    <button onclick="appendToken('log(')" class="btn-active rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-semibold uppercase cursor-pointer">log</button>
+                    <button onclick="appendToken('ln(')" class="btn-active rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-semibold uppercase cursor-pointer">ln</button>
+                </div>
+                <!-- Row 2: Secondary Scientific -->
+                <div class="grid grid-cols-5 gap-1.5 h-10">
+                    <button onclick="appendToken('sqrt(')" class="btn-active rounded-full bg-[#49454F] text-[#E6E1E5] text-xs font-medium uppercase cursor-pointer">√</button>
+                    <button onclick="appendToken('(')" class="btn-active rounded-full bg-[#49454F] text-[#E6E1E5] text-xs font-medium uppercase cursor-pointer">(</button>
+                    <button onclick="appendToken(')')" class="btn-active rounded-full bg-[#49454F] text-[#E6E1E5] text-xs font-medium uppercase cursor-pointer">)</button>
+                    <button onclick="appendToken('^')" class="btn-active rounded-full bg-[#49454F] text-[#E6E1E5] text-xs font-medium uppercase cursor-pointer">xʸ</button>
+                    <button onclick="appendToken('exp(')" class="btn-active rounded-full bg-[#49454F] text-[#E6E1E5] text-xs font-medium uppercase cursor-pointer">exp</button>
+                </div>
+                <!-- Row 3: Numeric Part & Operator Grid Layout -->
+                <div class="grid grid-cols-4 gap-2.5 pt-1.5">
+                    <button onclick="appendToken('7')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">7</button>
+                    <button onclick="appendToken('8')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">8</button>
+                    <button onclick="appendToken('9')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">9</button>
+                    <button onclick="appendToken('/')" class="h-13 rounded-[24px] bg-[#4F378B] text-[#EADDFF] text-xl btn-active cursor-pointer">÷</button>
+                    
+                    <button onclick="appendToken('4')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">4</button>
+                    <button onclick="appendToken('5')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">5</button>
+                    <button onclick="appendToken('6')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">6</button>
+                    <button onclick="appendToken('*')" class="h-13 rounded-[24px] bg-[#4F378B] text-[#EADDFF] text-lg btn-active cursor-pointer">×</button>
+
+                    <button onclick="appendToken('1')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">1</button>
+                    <button onclick="appendToken('2')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">2</button>
+                    <button onclick="appendToken('3')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">3</button>
+                    <button onclick="appendToken('-')" class="h-13 rounded-[24px] bg-[#4F378B] text-[#EADDFF] text-xl btn-active cursor-pointer">−</button>
+
+                    <button onclick="clearCalc()" class="h-13 rounded-[24px] bg-[#EFB8C8] text-[#492532] text-sm font-bold btn-active cursor-pointer">AC</button>
+                    <button onclick="appendToken('0')" class="h-13 rounded-[24px] bg-[#EADDFF] text-[#21005D] text-lg font-semibold btn-active cursor-pointer">0</button>
+                    <button onclick="backspaceCalc()" class="h-13 rounded-[24px] bg-[#49454F] text-[#E6E1E5] text-lg btn-active cursor-pointer">⌫</button>
+                    <button onclick="appendToken('+')" class="h-13 rounded-[24px] bg-[#4F378B] text-[#EADDFF] text-xl btn-active cursor-pointer">+</button>
+                </div>
+                
+                <!-- Bottom constants & equal row -->
+                <div class="grid grid-cols-4 gap-2.5 mt-1.5 pb-2">
+                    <button onclick="appendToken('pi')" class="h-11 rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-bold btn-active cursor-pointer">π</button>
+                    <button onclick="appendToken('e')" class="h-11 rounded-full bg-[#332D41] text-[#D0BCFF] text-xs font-bold btn-active cursor-pointer">e</button>
+                    <button onclick="appendToken('.')" class="h-11 rounded-full bg-[#332D41] text-[#D0BCFF] text-sm font-bold btn-active cursor-pointer">.</button>
+                    <button onclick="evaluateCalc()" class="h-11 rounded-[24px] bg-[#D0BCFF] text-[#381E72] text-xl font-bold btn-active cursor-pointer">=</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= GRAPHS SCREEN ================= -->
+        <section id="tab-graphs" class="hidden flex-1 flex flex-col gap-3 h-full overflow-hidden transition-all duration-300">
+            <!-- Graphical Plotting Canvas -->
+            <div class="bg-[#2B2930] rounded-[28px] p-3 flex-1 flex flex-col shadow-inner relative overflow-hidden border border-[#49454F]/10">
+                <div class="absolute top-3 left-3 bg-[#1C1B1F]/85 backdrop-blur-md px-3 py-1 rounded-full border border-[#49454F]/30 z-10 flex gap-2 text-[10px] items-center">
+                    <span class="w-2 h-2 rounded-full bg-[#00E676]"></span>
+                    <span class="text-[#D0BCFF] font-medium mono-font">f(x) et g(x)</span>
+                </div>
+                <div class="absolute top-3 right-3 bg-[#1C1B1F]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#49454F]/30 z-10 text-[9px] text-[#CAC4D0] mono-font" id="graph-scale-label">
+                    X:[-10, 10]
+                </div>
+                
+                <!-- Canvas -->
+                <div class="flex-1 w-full bg-[#1C1B1F] rounded-2xl overflow-hidden relative border border-[#49454F]/20">
+                    <canvas id="graphCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                </div>
+            </div>
+
+            <!-- Graph Expressions Form Inputs -->
+            <div class="bg-[#2B2930] rounded-[28px] p-4 flex flex-col gap-3">
+                <div class="flex gap-2.5">
+                    <div class="flex-1 relative">
+                        <span class="absolute left-3 top-3.5 text-xs text-[#00E676] font-bold">f(x)=</span>
+                        <input type="text" id="input-gap-f" value="sin(x) * cos(x/2)" class="w-full bg-[#1C1B1F] text-[#E6E1E5] rounded-xl pl-13 pr-3 py-3 text-xs outline-none border border-[#49454F]/40 focus:border-[#00E676] transition-colors mono-font" placeholder="x^2 - 3" />
+                    </div>
+                    <div class="flex-1 relative">
+                        <span class="absolute left-3 top-3.5 text-xs text-[#29B6F6] font-bold">g(x)=</span>
+                        <input type="text" id="input-gap-g" value="cos(x)" class="w-full bg-[#1C1B1F] text-[#E6E1E5] rounded-xl pl-13 pr-3 py-3 text-xs outline-none border border-[#49454F]/40 focus:border-[#29B6F6] transition-colors mono-font" placeholder="2 * x" />
+                    </div>
+                </div>
+
+                <div class="flex gap-2.5">
+                    <button onclick="applyGraphInputs()" class="flex-1 h-11 rounded-xl bg-[#332D41] text-[#D0BCFF] text-xs font-semibold btn-active cursor-pointer">Appliquer</button>
+                    <button onclick="saveCurrentGraphState()" class="flex-1.2 h-11 rounded-xl bg-[#D0BCFF] text-[#21005D] text-xs font-semibold flex items-center justify-center gap-1.5 btn-active cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Sauvegarder
+                    </button>
+                </div>
+
+                <!-- Zoom Presets buttons -->
+                <div class="border-t border-[#49454F]/20 pt-2 flex flex-col gap-1.5">
+                    <span class="text-[10px] text-[#CAC4D0] font-semibold uppercase tracking-wider">Ajuster Axes & Zoom</span>
+                    <div class="flex gap-1.5">
+                        <button onclick="setGraphBoundsPreset('standard')" class="flex-1 py-2 text-[10px] text-[#D0BCFF] bg-[#1C1B1F] border border-[#D0BCFF]/30 rounded-lg font-medium btn-active cursor-pointer">Standard</button>
+                        <button onclick="setGraphBoundsPreset('trigo')" class="flex-1 py-2 text-[10px] text-[#D0BCFF] bg-[#1C1B1F] border border-[#D0BCFF]/30 rounded-lg font-medium btn-active cursor-pointer">Trigo</button>
+                        <button onclick="zoomGraphScalar(0.7)" class="flex-0.7 py-2 bg-[#1C1B1F] text-[#D0BCFF] border border-[#D0BCFF]/30 rounded-lg flex items-center justify-center btn-active cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">zoom_in</span>
+                        </button>
+                        <button onclick="zoomGraphScalar(1.4)" class="flex-0.7 py-2 bg-[#1C1B1F] text-[#D0BCFF] border border-[#D0BCFF]/30 rounded-lg flex items-center justify-center btn-active cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">zoom_out</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ODE SCREEN ================= -->
+        <section id="tab-ode" class="hidden flex-1 flex flex-col gap-3 h-full overflow-hidden transition-all duration-300">
+            <!-- ODE Plotting Canvas -->
+            <div class="bg-[#2B2930] rounded-[28px] p-3 flex-1 flex flex-col shadow-inner relative overflow-hidden border border-[#49454F]/10">
+                <div class="absolute top-3 left-3 bg-[#1C1B1F]/85 backdrop-blur-md px-3 py-1 rounded-full border border-[#49454F]/30 z-10 flex gap-2 text-[10px] items-center">
+                    <span class="w-2 h-2 rounded-full bg-[#FF9100]"></span>
+                    <span class="text-[#D0BCFF] font-medium mono-font">Champ de directions + RK4</span>
+                </div>
+                <div class="absolute top-3 right-3 bg-[#1C1B1F]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#49454F]/30 z-10 text-[9px] text-[#CAC4D0] mono-font" id="ode-scale-label">
+                    Bounds: x:[-5, 5]
+                </div>
+
+                <div class="flex-1 w-full bg-[#1C1B1F] rounded-2xl overflow-hidden relative border border-[#49454F]/20">
+                    <canvas id="odeCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                </div>
+            </div>
+
+            <!-- ODE Parameters -->
+            <div class="bg-[#2B2930] rounded-[28px] p-4 flex flex-col gap-3">
+                <div class="flex flex-col gap-2">
+                    <div class="relative">
+                        <span class="absolute left-3 top-3 px-1 text-xs text-[#FF9100] font-bold">dy/dx = </span>
+                        <input type="text" id="input-ode-expr" value="x - y" class="w-full bg-[#1C1B1F] text-[#E6E1E5] rounded-xl pl-20 pr-3 py-3 text-xs outline-none border border-[#49454F]/40 focus:border-[#FF9100] transition-colors mono-font" placeholder="x - y" />
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <div class="flex-1 relative">
+                            <span class="absolute left-3 top-3 text-[11px] text-[#CAC4D0]">x₀</span>
+                            <input type="number" step="any" id="input-ode-x0" value="0.0" class="w-full bg-[#1C1B1F] text-[#E6E1E5] rounded-xl pl-8 pr-3 py-2.5 text-xs outline-none border border-[#49454F]/40 focus:border-white transition-colors mono-font" />
+                        </div>
+                        <div class="flex-1 relative">
+                            <span class="absolute left-3 top-3 text-[11px] text-[#CAC4D0]">y₀</span>
+                            <input type="number" step="any" id="input-ode-y0" value="1.0" class="w-full bg-[#1C1B1F] text-[#E6E1E5] rounded-xl pl-8 pr-3 py-2.5 text-xs outline-none border border-[#49454F]/40 focus:border-white transition-colors mono-font" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2.5">
+                    <button onclick="applyOdeInputs()" class="flex-1 h-11 rounded-xl bg-[#332D41] text-[#D0BCFF] text-xs font-semibold btn-active cursor-pointer">Résoudre</button>
+                    <button onclick="saveCurrentOdeState()" class="flex-1.2 h-11 rounded-xl bg-[#D0BCFF] text-[#21005D] text-xs font-semibold flex items-center justify-center gap-1.5 btn-active cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Sauvegarder
+                    </button>
+                </div>
+
+                <!-- Zoom Presets -->
+                <div class="border-t border-[#49454F]/20 pt-2 flex flex-col gap-1.5">
+                    <span class="text-[10px] text-[#CAC4D0] font-semibold uppercase tracking-wider">Ajuster Zoom de l'EDO</span>
+                    <div class="flex gap-1.5">
+                        <button onclick="setOdeBounds(2.0)" class="flex-1 py-2 text-[10px] text-[#D0BCFF] bg-[#1C1B1F] border border-[#D0BCFF]/30 rounded-lg font-medium btn-active cursor-pointer">Zoom x2</button>
+                        <button onclick="setOdeBounds(5.0)" class="flex-1 py-2 text-[10px] text-[#D0BCFF] bg-[#1C1B1F] border border-[#D0BCFF]/30 rounded-lg font-medium btn-active cursor-pointer">Zoom x5</button>
+                        <button onclick="setOdeBounds(10.0)" class="flex-1 py-2 text-[10px] text-[#D0BCFF] bg-[#1C1B1F] border border-[#D0BCFF]/30 rounded-lg font-medium btn-active cursor-pointer">Zoom x10</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HISTORY SCREEN ================= -->
+        <section id="tab-history" class="hidden flex-1 flex flex-col gap-3 h-full overflow-hidden transition-all duration-300">
+            <!-- Header display -->
+            <div class="flex items-center justify-between pb-1">
+                <div>
+                    <h2 class="text-md font-bold text-[#E6E1E5]">Historique des calculs & tracés</h2>
+                    <p class="text-[10px] text-[#CAC4D0]">Consultez, rechargez ou supprimez vos données.</p>
+                </div>
+                <!-- Delete All button icon -->
+                <button onclick="clearAllHistory()" class="text-sm p-1.5 text-[#EFB8C8] hover:bg-[#492532]/20 rounded-full btn-active transition-colors flex items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined text-xl">delete_sweep</span>
+                </button>
+            </div>
+
+            <!-- List of stored elements in wrapper -->
+            <div id="history-container" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2.5 pb-2">
+                <!-- Fallback empty design -->
+                <div id="history-empty" class="flex-1 flex flex-col items-center justify-center text-center opacity-60 px-6 py-10 gap-2">
+                    <span class="material-symbols-outlined text-4xl text-[#49454F]">history</span>
+                    <h3 class="font-bold text-xs text-[#CAC4D0]">Historique vide</h3>
+                    <p class="text-[10px] text-[#CAC4D0]/80">Aucune formule, équation ou calcul n'a été enregistré.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar matching M3 -->
+    <nav class="bg-[#1C1B1F] border-t border-[#49454F]/20 pt-2 pb-5 z-20">
+        <div class="max-w-md mx-auto grid grid-cols-4 px-2">
+            <!-- Tab Calculator -->
+            <button onclick="switchTab(0)" id="nav-btn-0" class="flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                <div id="nav-indicator-0" class="px-5 py-1 rounded-full bg-[#332D41] text-[#D0BCFF] flex items-center justify-center transition-all duration-200">
+                    <span class="material-symbols-outlined text-xl">calculate</span>
+                </div>
+                <span id="nav-label-0" class="text-[10px] font-semibold text-[#D0BCFF]">Calculs</span>
+            </button>
+
+            <!-- Tab Graphs -->
+            <button onclick="switchTab(1)" id="nav-btn-1" class="flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                <div id="nav-indicator-1" class="px-5 py-1 rounded-full text-[#CAC4D0] flex items-center justify-center transition-all duration-200">
+                    <span class="material-symbols-outlined text-xl">show_chart</span>
+                </div>
+                <span id="nav-label-1" class="text-[10px] text-[#CAC4D0]">Graphes</span>
+            </button>
+
+            <!-- Tab ODE -->
+            <button onclick="switchTab(2)" id="nav-btn-2" class="flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                <div id="nav-indicator-2" class="px-5 py-1 rounded-full text-[#CAC4D0] flex items-center justify-center transition-all duration-200">
+                    <span class="material-symbols-outlined text-xl">trending_up</span>
+                </div>
+                <span id="nav-label-2" class="text-[10px] text-[#CAC4D0]">Éq. Diff</span>
+            </button>
+
+            <!-- Tab History -->
+            <button onclick="switchTab(3)" id="nav-btn-3" class="flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
+                <div id="nav-indicator-3" class="px-5 py-1 rounded-full text-[#CAC4D0] flex items-center justify-center transition-all duration-200">
+                    <span class="material-symbols-outlined text-xl">history</span>
+                </div>
+                <span id="nav-label-3" class="text-[10px] text-[#CAC4D0]">Historique</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Custom Info Popup Modal -->
+    <div id="info-modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center p-5 z-50">
+        <div class="bg-[#2B2930] rounded-[28px] max-w-sm w-full p-6 border border-[#49454F]/30 shadow-2xl flex flex-col gap-4">
+            <h3 class="text-md font-bold text-[#D0BCFF] flex items-center gap-2">
+                <span class="material-symbols-outlined">analytics</span>
+                À propos de GraphCalc Pro
+            </h3>
+            <div class="text-[11px] text-[#CAC4D0] flex flex-col gap-2.5 leading-relaxed">
+                <p><strong>Moteur de calcul autonome</strong> : Écrit en pur JavaScript sans dépendances externes. Permet des calculs trigonométriques, logarithmiques et exponents complets.</p>
+                <p><strong>Calcul différentiel complexe</strong> : Résolution d'équations différentielles ordinaires du premier ordre (EDO) de la forme <em>dy/dx = f(x, y)</em> par la méthode prédictive <strong>Runge-Kutta 4 (RK4)</strong>.</p>
+                <p><strong>Visualisation vectorielle</strong> : Tracé dynamique du champ de directions vectorielles avec de minuscules vecteurs tangents à haute fidélité mathématique.</p>
+                <p><strong>Persistance locale</strong> : Historique entièrement synchronisé avec le stockage local SQLite / LocalStorage de votre appareil.</p>
+            </div>
+            <button onclick="hideInfoModal()" class="w-full py-2.5 bg-[#D0BCFF] text-[#21005D] rounded-xl font-bold text-xs btn-active cursor-pointer">Fermer</button>
+        </div>
+    </div>
+
+    <!-- MAIN ENGINE CONTROLLER DATA -->
+    <script>
+        // Tab system variables
+        let currentTab = 0;
+        
+        // Calculator state
+        let inputString = "0";
+        let isEvaluated = false;
+
+        // Graph Plotting Configuration
+        let gXMin = -10.0, gXMax = 10.0;
+        let gYMin = -10.0, gYMax = 10.0;
+        let activeGraphExprF = "sin(x) * cos(x/2)";
+        let activeGraphExprG = "cos(x)";
+        
+        // ODE Plotting Configuration
+        let oXMin = -5.0, oXMax = 5.0;
+        let oYMin = -5.0, oYMax = 5.0;
+        let activeOdeExpr = "x - y";
+        let odeX0 = 0.0, odeY0 = 1.0;
+
+        // Persistent history storage key
+        const HISTORY_KEY = "scicalc_pro_history";
+
+        // Global initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            initInputs();
+            initGraphCanvasHandlers();
+            initOdeCanvasHandlers();
+            renderGraphs();
+            renderOde();
+            updateHistoryView();
+        });
+
+        // ================= MATHEMATICAL EXPRESSION PARSER & EVALUATION =================
+        function evaluateExpression(expr, variables = {}) {
+            let sanitized = expr.toLowerCase();
+            
+            // Basic parameter checks for security
+            if (/[^0-9a-z+\-*/%^().\s]/.test(sanitized)) {
+                throw new Error("Caractères invalides");
+            }
+            
+            const forbidden = ["alert", "eval", "prompt", "window", "document", "function", "this", "constructor", "prototype", "global"];
+            for (let kw of forbidden) {
+                if (sanitized.includes(kw)) {
+                    throw new Error("Sécurité compromise");
+                }
+            }
+
+            // Insert implicit multiplications:
+            // e.g. "2x" -> "2*x", "(x)(y)" -> "(x)*(y)", "2(3+1)" -> "2*(3+1)"
+            sanitized = sanitized.replace(/(\d)(\()/g, '$1*$2');
+            sanitized = sanitized.replace(/(\))(\()/g, '$1*$2');
+            sanitized = sanitized.replace(/(\))(\d)/g, '$1*$2');
+            sanitized = sanitized.replace(/(\))([a-zπ])/g, '$1*$2');
+            sanitized = sanitized.replace(/(\d)([a-zπ])/g, '$1*$2');
+            sanitized = sanitized.replace(/([xytπe])(\()/g, '$1*$2');
+            sanitized = sanitized.replace(/([xyt])([xytπe])/g, '$1*$2');
+
+            // Replace standard constants
+            sanitized = sanitized.replace(/\bpi\b/g, 'Math.PI');
+            sanitized = sanitized.replace(/\be\b/g, 'Math.E');
+
+            // Replace exponential notation "^" with JS exponentiation "**"
+            sanitized = sanitized.replace(/\^/g, '**');
+
+            // Substitute functions safely
+            sanitized = sanitized.replace(/\bsqrt\b/g, 'Math.sqrt');
+            sanitized = sanitized.replace(/\bexp\b/g, 'Math.exp');
+            sanitized = sanitized.replace(/\bln\b/g, 'Math.log');
+            sanitized = sanitized.replace(/\blog\b/g, 'Math.log10');
+            sanitized = sanitized.replace(/\bsin\b/g, 'Math.sin');
+            sanitized = sanitized.replace(/\bcos\b/g, 'Math.cos');
+            sanitized = sanitized.replace(/\btan\b/g, 'Math.tan');
+
+            // Inject local math variables values
+            for (let v in variables) {
+                let val = variables[v];
+                let rx = new RegExp('\\b' + v + '\\b', 'g');
+                sanitized = sanitized.replace(rx, `(${val})`);
+            }
+
+            try {
+                // Execute in clean isolated function environment
+                let res = new Function(`"use strict"; return (${sanitized});`)();
+                if (typeof res !== 'number' || isNaN(res) || !isFinite(res)) {
+                    throw new Error("Résultat indéfini");
+                }
+                return res;
+            } catch (err) {
+                throw new Error("Syntaxe erronée");
+            }
+        }
+
+        // ================= CORE CALCULATOR INTERACTIVITY =================
+        function initInputs() {
+            document.getElementById('calc-input').innerText = "0";
+            document.getElementById('calc-result').innerText = "= 0";
+        }
+
+        // Appends scientific or numeric symbols
+        function appendToken(token) {
+            if (isEvaluated) {
+                if (/[0-9.pi(sincossqrt]/.test(token.charAt(0)) || token.length > 1) {
+                    inputString = token;
+                } else {
+                    inputString += token;
+                }
+                isEvaluated = false;
+            } else {
+                if (inputString === "0") {
+                    if (token === ".") {
+                        inputString = "0.";
+                    } else if (/[0-9a-z(]/.test(token.charAt(0)) || token.length > 1) {
+                        inputString = token;
+                    } else {
+                        inputString += token;
+                    }
+                } else {
+                    inputString += token;
+                }
+            }
+            updateCalcDisplay();
+        }
+
+        function clearCalc() {
+            inputString = "0";
+            isEvaluated = false;
+            updateCalcDisplay();
+        }
+
+        function backspaceCalc() {
+            if (inputString.length > 1) {
+                // Detect multi-character removals
+                if (inputString.endsWith("sin(") || inputString.endsWith("cos(") || inputString.endsWith("tan(") || inputString.endsWith("log(") || inputString.endsWith("exp(")) {
+                    inputString = inputString.slice(0, -4);
+                } else if (inputString.endsWith("sqrt(") || inputString.endsWith("log(")) {
+                    inputString = inputString.slice(0, -5);
+                } else if (inputString.endsWith("ln(")) {
+                    inputString = inputString.slice(0, -3);
+                } else {
+                    inputString = inputString.slice(0, -1);
+                }
+            } else {
+                inputString = "0";
+            }
+            if (inputString === "") inputString = "0";
+            isEvaluated = false;
+            updateCalcDisplay();
+        }
+
+        // Redraw content changes
+        function updateCalcDisplay() {
+            document.getElementById('calc-input').innerText = inputString;
+            document.getElementById('calc-error').classList.add('hidden');
+        }
+
+        function evaluateCalc() {
+            try {
+                const res = evaluateExpression(inputString, {x: 2.0});
+                let rounded = Number(res.toFixed(10)).toString();
+                document.getElementById('calc-result').innerText = "= " + rounded;
+                document.getElementById('calc-error').classList.add('hidden');
+                
+                // Save automatically to history list
+                saveToHistory({
+                    type: 'CALC',
+                    expression: inputString,
+                    resultText: rounded,
+                    timestamp: Date.now()
+                });
+                
+                isEvaluated = true;
+            } catch (err) {
+                document.getElementById('calc-error').classList.remove('hidden');
+                document.getElementById('calc-result').innerText = "= ERREUR";
+            }
+        }
+
+        // ================= GRAPHS CANVAS RENDERING ENGINE =================
+        function renderGraphs() {
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Match internal buffer logic
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            // Clear screen
+            ctx.fillStyle = '#1C1B1F';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw primary grid lines
+            ctx.strokeStyle = '#49454F';
+            ctx.lineWidth = 0.5;
+            ctx.fillStyle = '#CAC4D0';
+            ctx.textBaseline = 'top';
+            ctx.font = '10px "JetBrains Mono"';
+
+            // Automatic spacing grid step selection based on bounds size
+            const rangeX = gXMax - gXMin;
+            let stepX = 1.0;
+            if (rangeX > 30) stepX = 5.0;
+            if (rangeX > 150) stepX = 20.0;
+            if (rangeX < 5) stepX = 0.5;
+
+            // Draw vertical ticks
+            const startX = Math.floor(gXMin / stepX) * stepX;
+            for (let x = startX; x <= gXMax; x += stepX) {
+                let px = ((x - gXMin) / rangeX) * canvas.width;
+                ctx.beginPath();
+                ctx.moveTo(px, 0);
+                ctx.lineTo(px, canvas.height);
+                ctx.stroke();
+
+                // Draw number coordinate values
+                let pyAxis = canvas.height - ((0 - gYMin) / (gYMax - gYMin)) * canvas.height;
+                pyAxis = Math.min(Math.max(pyAxis, 10), canvas.height - 20);
+                if (Math.abs(x) > 1e-9) {
+                    ctx.fillText(Number(x.toFixed(2)).toString(), px + 3, pyAxis + 3);
+                }
+            }
+
+            // Draw horizontal ticks
+            const rangeY = gYMax - gYMin;
+            let stepY = 1.0;
+            if (rangeY > 30) stepY = 5.0;
+            if (rangeY < 5) stepY = 0.5;
+            const startY = Math.floor(gYMin / stepY) * stepY;
+            for (let y = startY; y <= gYMax; y += stepY) {
+                let py = canvas.height - ((y - gYMin) / rangeY) * canvas.height;
+                ctx.beginPath();
+                ctx.moveTo(0, py);
+                ctx.lineTo(canvas.width, py);
+                ctx.stroke();
+
+                // Draw coordinate numbers
+                let pxAxis = ((0 - gXMin) / rangeX) * canvas.width;
+                pxAxis = Math.min(Math.max(pxAxis, 10), canvas.width - 25);
+                if (Math.abs(y) > 1e-9) {
+                    ctx.fillText(Number(y.toFixed(2)).toString(), pxAxis + 4, py - 10);
+                }
+            }
+
+            // Draw standard central main Cartesian X & Y axis lines
+            ctx.strokeStyle = '#D0BCFF';
+            ctx.lineWidth = 1.5;
+            
+            // X Axis
+            let px0 = ((0 - gXMin) / rangeX) * canvas.width;
+            ctx.beginPath();
+            ctx.moveTo(px0, 0);
+            ctx.lineTo(px0, canvas.height);
+            ctx.stroke();
+
+            // Y Axis
+            let py0 = canvas.height - ((0 - gYMin) / rangeY) * canvas.height;
+            ctx.beginPath();
+            ctx.moveTo(0, py0);
+            ctx.lineTo(canvas.width, py0);
+            ctx.stroke();
+
+            // Intersection point (0,0) accent
+            ctx.fillStyle = '#EFB8C8';
+            ctx.beginPath();
+            ctx.arc(px0, py0, 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Render f(x) curve (Green color)
+            if (activeGraphExprF.trim() !== "") {
+                ctx.strokeStyle = '#00E676';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                let first = true;
+                for (let px = 0; px < canvas.width; px++) {
+                    let x = gXMin + (px / canvas.width) * rangeX;
+                    try {
+                        let y = evaluateExpression(activeGraphExprF, {x: x});
+                        if (isFinite(y) && !isNaN(y)) {
+                            let py = canvas.height - ((y - gYMin) / rangeY) * canvas.height;
+                            if (py >= 0 && py <= canvas.height) {
+                                if (first) {
+                                    ctx.moveTo(px, py);
+                                    first = false;
+                                } else {
+                                    ctx.lineTo(px, py);
+                                }
+                            } else {
+                                first = true;
+                            }
+                        } else {
+                            first = true;
+                        }
+                    } catch (e) {
+                        first = true;
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Render g(x) curve (Cyan dashed curve)
+            if (activeGraphExprG.trim() !== "") {
+                ctx.strokeStyle = '#29B6F6';
+                ctx.lineWidth = 2.0;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                let first = true;
+                for (let px = 0; px < canvas.width; px++) {
+                    let x = gXMin + (px / canvas.width) * rangeX;
+                    try {
+                        let y = evaluateExpression(activeGraphExprG, {x: x});
+                        if (isFinite(y) && !isNaN(y)) {
+                            let py = canvas.height - ((y - gYMin) / rangeY) * canvas.height;
+                            if (py >= 0 && py <= canvas.height) {
+                                if (first) {
+                                    ctx.moveTo(px, py);
+                                    first = false;
+                                } else {
+                                    ctx.lineTo(px, py);
+                                }
+                            } else {
+                                first = true;
+                            }
+                        } else {
+                            first = true;
+                        }
+                    } catch (e) {
+                        first = true;
+                    }
+                }
+                ctx.stroke();
+                ctx.setLineDash([]); // clear dash offset
+            }
+
+            // Update range label indicator dynamically
+            document.getElementById('graph-scale-label').innerText = `X:[${gXMin.toFixed(1)}, ${gXMax.toFixed(1)}]`;
+        }
+
+        // Apply visual inputs to re-draw active formula outputs
+        function applyGraphInputs() {
+            activeGraphExprF = document.getElementById('input-gap-f').value;
+            activeGraphExprG = document.getElementById('input-gap-g').value;
+            renderGraphs();
+        }
+
+        function saveCurrentGraphState() {
+            applyGraphInputs();
+            saveToHistory({
+                type: 'GRAPH',
+                expression: activeGraphExprF,
+                secondaryExpression: activeGraphExprG,
+                timestamp: Date.now()
+            });
+        }
+
+        // Zoom bounds and scaling methods for graphing canvas
+        function setGraphBoundsPreset(preset) {
+            if (preset === 'standard') {
+                gXMin = -10.0; gXMax = 10.0;
+                gYMin = -10.0; gYMax = 10.0;
+            } else if (preset === 'trigo') {
+                gXMin = -2 * Math.PI; gXMax = 2 * Math.PI;
+                gYMin = -2.0; gYMax = 2.0;
+            }
+            renderGraphs();
+        }
+
+        function zoomGraphScalar(factor) {
+            let midX = (gXMin + gXMax) / 2;
+            let halfSpanX = ((gXMax - gXMin) / 2) * factor;
+            gXMin = midX - halfSpanX;
+            gXMax = midX + halfSpanX;
+
+            let midY = (gYMin + gYMax) / 2;
+            let halfSpanY = ((gYMax - gYMin) / 2) * factor;
+            gYMin = midY - halfSpanY;
+            gYMax = midY + halfSpanY;
+
+            renderGraphs();
+        }
+
+        // Interactive mouse pointer dragging on Graphs Canvas
+        function initGraphCanvasHandlers() {
+            const canvas = document.getElementById('graphCanvas');
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                let dx = e.clientX - lastX;
+                let dy = e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+
+                // Relative calculation changes
+                let mathDx = (dx / canvas.width) * (gXMax - gXMin);
+                let mathDy = (dy / canvas.height) * (gYMax - gYMin);
+
+                gXMin -= mathDx;
+                gXMax -= mathDx;
+                gYMin += mathDy;
+                gYMax += mathDy;
+
+                renderGraphs();
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            // Make compatible with basic touch gestures mapping
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    lastX = e.touches[0].clientX;
+                    lastY = e.touches[0].clientY;
+                }
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                let dx = e.touches[0].clientX - lastX;
+                let dy = e.touches[0].clientY - lastY;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+
+                let mathDx = (dx / canvas.width) * (gXMax - gXMin);
+                let mathDy = (dy / canvas.height) * (gYMax - gYMin);
+
+                gXMin -= mathDx;
+                gXMax -= mathDx;
+                gYMin += mathDy;
+                gYMax += mathDy;
+
+                renderGraphs();
+            });
+
+            canvas.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+
+        // ================= ODE CHANNELS & VECTOR SOLVING ENGINE =================
+        function renderOde() {
+            const canvas = document.getElementById('odeCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            // Clear black space
+            ctx.fillStyle = '#1C1B1F';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const dxRange = oXMax - oXMin;
+            const dyRange = oYMax - oYMin;
+
+            // 1. Draw central standard Axis lines
+            ctx.strokeStyle = '#49454F';
+            ctx.lineWidth = 1;
+            
+            let px0 = ((0 - oXMin) / dxRange) * canvas.width;
+            ctx.beginPath();
+            ctx.moveTo(px0, 0);
+            ctx.lineTo(px0, canvas.height);
+            ctx.stroke();
+
+            let py0 = canvas.height - ((0 - oYMin) / dyRange) * canvas.height;
+            ctx.beginPath();
+            ctx.moveTo(0, py0);
+            ctx.lineTo(canvas.width, py0);
+            ctx.stroke();
+
+            // Grid tick metrics labels inside graph
+            ctx.fillStyle = '#CAC4D0';
+            ctx.font = '9px "JetBrains Mono"';
+            ctx.fillText("x₀=" + odeX0.toString() + " y₀=" + odeY0.toString(), 10, 20);
+
+            // 2. Draw slope direction tangent vector fields
+            // Setup regular grids
+            const gridCols = 15;
+            const gridRows = 12;
+            ctx.lineWidth = 0.8;
+
+            for (let c = 0; c < gridCols; c++) {
+                for (let r = 0; r < gridRows; r++) {
+                    let cx = oXMin + (c / (gridCols - 1)) * dxRange;
+                    let cy = oYMin + (r / (gridRows - 1)) * dyRange;
+
+                    try {
+                        let m = evaluateExpression(activeOdeExpr, {x: cx, y: cy});
+                        if (isFinite(m) && !isNaN(m)) {
+                            // Compute screen center layout
+                            let scx = ((cx - oXMin) / dxRange) * canvas.width;
+                            let scy = canvas.height - ((cy - oYMin) / dyRange) * canvas.height;
+
+                            // Compute visual angle values
+                            let angle = Math.atan(m);
+                            let arrowLen = 14; // in px
+                            let xOffset = (arrowLen / 2) * Math.cos(angle);
+                            let yOffset = (arrowLen / 2) * Math.sin(angle);
+
+                            // Draw a beautiful vector arrow representing tangent space flow
+                            ctx.strokeStyle = `rgba(170, 150, 255, ${Math.min(0.18 + Math.abs(angle)/5, 0.4)})`;
+                            ctx.beginPath();
+                            ctx.moveTo(scx - xOffset, scy + yOffset);
+                            ctx.lineTo(scx + xOffset, scy - yOffset);
+                            ctx.stroke();
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            // 3. Integrate Trajectory of f(x,y) via RK4 Method solver
+            const solverPoints = solveRK4(activeOdeExpr, odeX0, odeY0, oXMin, oXMax, 250);
+            if (solverPoints.length > 0) {
+                ctx.strokeStyle = '#EFB8C8';
+                ctx.lineWidth = 3.0;
+                ctx.beginPath();
+                
+                let first = true;
+                for (let pt of solverPoints) {
+                    let sx = ((pt.x - oXMin) / dxRange) * canvas.width;
+                    let sy = canvas.height - ((pt.y - oYMin) / dyRange) * canvas.height;
+                    
+                    if (sx >= -50 && sx <= canvas.width + 50 && sy >= -50 && sy <= canvas.height + 50) {
+                        if (first) {
+                            ctx.moveTo(sx, sy);
+                            first = false;
+                        } else {
+                            ctx.lineTo(sx, sy);
+                        }
+                    } else {
+                        first = true; // broken segments if out of range too much
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Draw a shiny highlighted circle directly showing initial starting coordinate values (x0, y0)
+            let sX0 = ((odeX0 - oXMin) / dxRange) * canvas.width;
+            let sY0 = canvas.height - ((odeY0 - oYMin) / dyRange) * canvas.height;
+            
+            ctx.fillStyle = '#FF9100';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#FF9100';
+            ctx.beginPath();
+            ctx.arc(sX0, sY0, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // reset canvas shadow offsets
+            ctx.shadowBlur = 0;
+
+            document.getElementById('ode-scale-label').innerText = `X:[${oXMin.toFixed(1)}, ${oXMax.toFixed(1)}]`;
+        }
+
+        // Implementation of standard 4-stage Runge-Kutta numerical integration solver
+        function solveRK4(expr, x0, y0, xMin, xMax, steps) {
+            const points = [];
+            points.push({x: x0, y: y0});
+
+            // Parse expression wrapper to avoid double errors
+            const ev = (valX, valY) => {
+                try {
+                    return evaluateExpression(expr, {x: valX, y: valY});
+                } catch(e) {
+                    return 0;
+                }
+            };
+
+            // Integrate Forward trajectories values
+            if (xMax > x0) {
+                const stepLen = (xMax - x0) / (steps / 2);
+                let cx = x0;
+                let cy = y0;
+                for (let i = 0; i < steps/2; i++) {
+                    let k1 = ev(cx, cy);
+                    let k2 = ev(cx + stepLen/2, cy + stepLen/2 * k1);
+                    let k3 = ev(cx + stepLen/2, cy + stepLen/2 * k2);
+                    let k4 = ev(cx + stepLen, cy + stepLen * k3);
+                    
+                    cy = cy + (stepLen/6) * (k1 + 2 * k2 + 2 * k3 + k4);
+                    cx = cx + stepLen;
+                    
+                    if (isNaN(cy) || !isFinite(cy) || Math.abs(cy) > 1e6) break;
+                    points.push({x: cx, y: cy});
+                }
+            }
+
+            // Integrate Reverse trajectories values
+            if (xMin < x0) {
+                const stepLen = (xMin - x0) / (steps / 2); // backward steps, negative
+                let cx = x0;
+                let cy = y0;
+                for (let i = 0; i < steps/2; i++) {
+                    let k1 = ev(cx, cy);
+                    let k2 = ev(cx + stepLen/2, cy + stepLen/2 * k1);
+                    let k3 = ev(cx + stepLen/2, cy + stepLen/2 * k2);
+                    let k4 = ev(cx + stepLen, cy + stepLen * k3);
+                    
+                    cy = cy + (stepLen/6) * (k1 + 2 * k2 + 2 * k3 + k4);
+                    cx = cx + stepLen;
+                    
+                    if (isNaN(cy) || !isFinite(cy) || Math.abs(cy) > 1e6) break;
+                    points.push({x: cx, y: cy});
+                }
+            }
+
+            points.sort((a, b) => a.x - b.x);
+            return points;
+        }
+
+        function applyOdeInputs() {
+            activeOdeExpr = document.getElementById('input-ode-expr').value;
+            odeX0 = parseFloat(document.getElementById('input-ode-x0').value) || 0.0;
+            odeY0 = parseFloat(document.getElementById('input-ode-y0').value) || 0.0;
+            renderOde();
+        }
+
+        function saveCurrentOdeState() {
+            applyOdeInputs();
+            saveToHistory({
+                type: 'ODE',
+                expression: activeOdeExpr,
+                initialX: odeX0,
+                initialY: odeY0,
+                timestamp: Date.now()
+            });
+        }
+
+        function setOdeBounds(bounds) {
+            oXMin = -bounds; oXMax = bounds;
+            oYMin = -bounds; oYMax = bounds;
+            renderOde();
+        }
+
+        // Panning handler controls for EDO solver canvas
+        function initOdeCanvasHandlers() {
+            const canvas = document.getElementById('odeCanvas');
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                let dx = e.clientX - lastX;
+                let dy = e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+
+                let mathDx = (dx / canvas.width) * (oXMax - oXMin);
+                let mathDy = (dy / canvas.height) * (oYMax - oYMin);
+
+                oXMin -= mathDx;
+                oXMax -= mathDx;
+                oYMin += mathDy;
+                oYMax += mathDy;
+
+                renderOde();
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    lastX = e.touches[0].clientX;
+                    lastY = e.touches[0].clientY;
+                }
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                let dx = e.touches[0].clientX - lastX;
+                let dy = e.touches[0].clientY - lastY;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+
+                let mathDx = (dx / canvas.width) * (oXMax - oXMin);
+                let mathDy = (dy / canvas.height) * (oYMax - oYMin);
+
+                oXMin -= mathDx;
+                oXMax -= mathDx;
+                oYMin += mathDy;
+                oYMax += mathDy;
+
+                renderOde();
+            });
+
+            canvas.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+
+        // ================= PERSISTENT HISTORY MANAGEMENT =================
+        function saveToHistory(item) {
+            let historyList = [];
+            try {
+                historyList = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+            } catch (e) {}
+
+            // Assign standard id timestamp key
+            item.id = Date.now() + Math.floor(Math.random() * 1000);
+            historyList.unshift(item);
+
+            // Limit list to last 50 entries
+            if (historyList.length > 50) {
+                historyList = historyList.slice(0, 50);
+            }
+
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(historyList));
+            updateHistoryView();
+        }
+
+        function getHistoryList() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function updateHistoryView() {
+            const container = document.getElementById('history-container');
+            const items = getHistoryList();
+            
+            // Keep empty state placeholder alive
+            container.innerHTML = "";
+            if (items.length === 0) {
+                container.innerHTML = `
+                <div id="history-empty" class="flex-1 flex flex-col items-center justify-center text-center opacity-60 px-6 py-10 gap-2">
+                    <span class="material-symbols-outlined text-4xl text-[#49454F]">history</span>
+                    <h3 class="font-bold text-xs text-[#CAC4D0]">Historique vide</h3>
+                    <p class="text-[10px] text-[#CAC4D0]/80">Aucune formule, équation ou calcul n'a été enregistré.</p>
+                </div>`;
+                return;
+            }
+
+            items.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = "bg-[#2B2930] rounded-2xl p-4 flex flex-col gap-2 relative border border-[#49454F]/10 hover:border-[#D0BCFF]/30 transition-all cursor-pointer btn-active";
+                card.onclick = (e) => {
+                    // Prevent trigger if they hit specific delete icons
+                    if (e.target.closest('.delete-single-btn')) return;
+                    loadHistoryItem(item);
+                };
+
+                // Formulate chip content info
+                let chipText = "Calcul";
+                let chipColor = "bg-[#D0BCFF]/10 text-[#D0BCFF]";
+                let bodyContentHtml = "";
+
+                if (item.type === 'CALC') {
+                    chipText = "Calcul";
+                    chipColor = "bg-[#D0BCFF]/15 text-[#D0BCFF]";
+                    bodyContentHtml = `
+                        <div class="mono-font text-xs font-semibold text-[#E6E1E5] break-words whitespace-pre-wrap">${item.expression}</div>
+                        <div class="mono-font text-sm font-bold text-[#D0BCFF] text-right mt-1">= ${item.resultText}</div>
+                    `;
+                } else if (item.type === 'GRAPH') {
+                    chipText = "Graphe";
+                    chipColor = "bg-[#CCC2DC]/15 text-[#CCC2DC]";
+                    bodyContentHtml = `
+                        <div class="text-xs font-medium text-[#E6E1E5]">f(x) = <span class="mono-font font-semibold text-[#00E676]">${item.expression}</span></div>
+                        ${item.secondaryExpression ? `<div class="text-xs font-medium text-[#E6E1E5] mt-0.5">g(x) = <span class="mono-font font-semibold text-[#29B6F6]">${item.secondaryExpression}</span></div>` : ''}
+                    `;
+                } else if (item.type === 'ODE') {
+                    chipText = "Éq. Diff (RK4)";
+                    chipColor = "bg-[#EFB8C8]/15 text-[#EFB8C8]";
+                    bodyContentHtml = `
+                        <div class="text-xs font-medium text-[#E6E1E5]">dy/dx = <span class="mono-font font-semibold text-[#FF9100]">${item.expression}</span></div>
+                        <div class="text-[10px] text-[#CAC4D0] mt-1 italic">Cond. Initiale : x₀ = ${item.initialX}, y₀ = ${item.initialY}</div>
+                    `;
+                }
+
+                // Date representation
+                const dateStr = new Date(item.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${chipColor}">${chipText}</span>
+                            <span class="text-[9px] text-[#CAC4D0]">${dateStr}</span>
+                        </div>
+                        <button onclick="deleteSingleHistory(${item.id})" class="delete-single-btn p-1 text-[#CAC4D0] hover:text-[#EFB8C8] rounded-full transition-colors flex items-center justify-center">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                    <div class="mt-1">${bodyContentHtml}</div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Action reload function to load elements back into relevant tab views
+        function loadHistoryItem(item) {
+            if (item.type === 'CALC') {
+                inputString = item.expression;
+                isEvaluated = true;
+                updateCalcDisplay();
+                document.getElementById('calc-result').innerText = "= " + item.resultText;
+                switchTab(0);
+            } else if (item.type === 'GRAPH') {
+                document.getElementById('input-gap-f').value = item.expression;
+                document.getElementById('input-gap-g').value = item.secondaryExpression || "";
+                activeGraphExprF = item.expression;
+                activeGraphExprG = item.secondaryExpression || "";
+                renderGraphs();
+                switchTab(1);
+            } else if (item.type === 'ODE') {
+                document.getElementById('input-ode-expr').value = item.expression;
+                document.getElementById('input-ode-x0').value = item.initialX;
+                document.getElementById('input-ode-y0').value = item.initialY;
+                activeOdeExpr = item.expression;
+                odeX0 = item.initialX;
+                odeY0 = item.initialY;
+                renderOde();
+                switchTab(2);
+            }
+        }
+
+        function deleteSingleHistory(itemId) {
+            let items = getHistoryList();
+            items = items.filter((it) => it.id !== itemId);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+            updateHistoryView();
+        }
+
+        function clearAllHistory() {
+            if (confirm("Voulez-vous vraiment vider tout l'historique local de calculs et de graphes ?")) {
+                localStorage.removeItem(HISTORY_KEY);
+                updateHistoryView();
+            }
+        }
+
+
+        // ================= TAB NAVIGATION UTILS =================
+        function switchTab(tabIndex) {
+            currentTab = tabIndex;
+            
+            // Sections lists
+            const sections = [
+                document.getElementById('tab-calculator'),
+                document.getElementById('tab-graphs'),
+                document.getElementById('tab-ode'),
+                document.getElementById('tab-history')
+            ];
+
+            // Hide all and display active
+            sections.forEach((sec, idx) => {
+                if (idx === tabIndex) {
+                    sec.classList.remove('hidden');
+                } else {
+                    sec.classList.add('hidden');
+                }
+            });
+
+            // Update bottom navigation elements styles dynamically matching active pills
+            for (let i = 0; i < 4; i++) {
+                const indicator = document.getElementById(`nav-indicator-${i}`);
+                const label = document.getElementById(`nav-label-${i}`);
+                
+                if (i === tabIndex) {
+                    indicator.className = "px-5 py-1 rounded-full bg-[#332D41] text-[#D0BCFF] flex items-center justify-center transition-all duration-200";
+                    label.className = "text-[10px] font-semibold text-[#D0BCFF]";
+                } else {
+                    indicator.className = "px-5 py-1 rounded-full text-[#CAC4D0] flex items-center justify-center transition-all duration-200";
+                    label.className = "text-[10px] text-[#CAC4D0]";
+                }
+            }
+
+            // Specific refresh callbacks
+            if (tabIndex === 1) {
+                setTimeout(renderGraphs, 50);
+            } else if (tabIndex === 2) {
+                setTimeout(renderOde, 50);
+            } else if (tabIndex === 3) {
+                updateHistoryView();
+            }
+        }
+
+        // ================= POPUP MODALS & UTILS CONTROL =================
+        function showInfoModal() {
+            document.getElementById('info-modal').classList.remove('hidden');
+        }
+
+        function hideInfoModal() {
+            document.getElementById('info-modal').classList.add('hidden');
+        }
+
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'GraphCalc Pro',
+                    text: 'Calculatrice scientifique, tracés trigonométriques et résolutions RK4 d\'équations différentielles ordinaires en ligne !',
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                alert("L'URL de l'application a été copiée dans votre presse-papiers !");
+                navigator.clipboard.writeText(window.location.href);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "Calculatrice",
+  "description": "Calculatrice scientifique avancée capable de gérer les graphiques complexes et les équations différentielles. Inclut la résolution d'équations différentielles ordinaires par RK4 et un traceur directionnel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
