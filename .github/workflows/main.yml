@@ -1,0 +1,29 @@
+name: Compilation HTML en APK
+
+on:
+  push:
+    branches:
+      - main  # Déclenche la compilation à chaque modification sur la branche principale
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+
+      - name: Compiler le code HTML en APK
+        uses: tttstudios/website-to-apk-action@v1.0.1
+        with:
+          # Indiquez '.' si vos fichiers sont à la racine, ou le nom de votre dossier (ex: 'build')
+          build-folder-path: '.' 
+          app-name: "Mon App Mobile"
+          package-name: "com.monentreprise.monapp"
+
+      - name: Sauvegarder le fichier APK généré
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-apk
+          path: ./*.apk
+
